@@ -56,7 +56,7 @@ class Anime:
         self._proxies = {}
 
         self.season_title_filter = re.compile('第[零一二三四五六七八九十]{1,3}季$')
-        self.extra_title_filter = re.compile('\[(特別篇|中文配音)\]$')
+        self.extra_title_filter = re.compile(r'\[(特別篇|中文配音)\]$')
 
         if self._settings['use_mobile_api']:
             err_print(sn, '解析模式', 'APP解析', display=False)
