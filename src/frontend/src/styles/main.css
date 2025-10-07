@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Pixel 風格樣式 */
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Card 樣式 */
+  .pixel-card {
+    @apply rounded-2xl shadow-sm transition-all duration-300;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .pixel-card:hover {
+    @apply -translate-y-0.5;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Button 樣式 */
+  .pixel-button {
+    @apply rounded-xl font-semibold transition-all duration-200;
+    letter-spacing: 0.5px;
+  }
+
+  .pixel-button:active {
+    transform: scale(0.97);
+  }
+
+  /* Tab 樣式 */
+  .tab-button {
+    @apply relative px-6 py-4 text-gray-600 dark:text-gray-400 font-medium transition-all duration-300;
+  }
+
+  .tab-button::after {
+    content: '';
+    @apply absolute bottom-0 left-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-primary-dark rounded-t-sm transition-all duration-300;
+    transform: translateX(-50%);
+  }
+
+  .tab-button[aria-selected='true'] {
+    @apply text-primary dark:text-primary-400 font-semibold;
+  }
+
+  .tab-button[aria-selected='true']::after {
+    @apply w-full;
+  }
+
+  .tab-button:hover:not([aria-selected='true']) {
+    @apply text-gray-800 dark:text-gray-200 bg-primary/5 dark:bg-primary/10;
+  }
+
+  /* Switch 樣式 */
+  .switch-wrapper {
+    @apply relative inline-flex items-center cursor-pointer;
+  }
+
+  .switch-input {
+    @apply absolute opacity-0 w-0 h-0;
+  }
+
+  .switch-track {
+    @apply w-12 h-7 bg-gray-300 dark:bg-gray-600 rounded-full relative transition-colors duration-200;
+  }
+
+  .switch-input:checked + .switch-track {
+    @apply bg-primary;
+  }
+
+  .switch-thumb {
+    @apply absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-200;
+  }
+
+  .switch-input:checked ~ .switch-thumb {
+    @apply translate-x-5;
+  }
+
+  /* Progress Bar */
+  .progress-bar {
+    @apply relative w-full h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-primary to-primary-dark transition-all duration-300 ease-out;
+  }
+
+  .progress-text {
+    @apply absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200;
+  }
+}
+
+@layer utilities {
+  /* 淡入動畫 */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  /* Toast 滑入動畫 */
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -8rem);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  @keyframes slideOutUp {
+    from {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    to {
+      opacity: 0;
+      transform: translate(-50%, -8rem);
+    }
+  }
+
+  .toast-enter {
+    animation: slideInDown 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toast-exit {
+    animation: slideOutUp 0.5s cubic-bezier(0.4, 0, 1, 1);
+  }
+}

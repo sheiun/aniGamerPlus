@@ -1,12 +1,9 @@
-version: "3.9"
-name: ani-gamer-plus
-
 services:
-  ani-gamer-plus:
+  ani-gamer-next:
     build:
       context: .
     image: anigamerplus
-    container_name: "ani-gamer-plus"
+    container_name: "ani-gamer-next"
     volumes:
       - "./downloads:/app/bangumi"
       - type: bind

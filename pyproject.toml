@@ -1,0 +1,38 @@
+[project]
+name = "ani-gamer-next"
+version = "2.0.0"
+description = "巴哈姆特動畫瘋自動下載工具"
+authors = [
+    {name = "Sheiun"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+dependencies = [
+    "termcolor==1.1.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "chardet==3.0.4",
+    "beautifulsoup4==4.12.3",
+    "httpx[socks]>=0.27.0",
+    "tomli-w>=1.0.0",
+    "pyjwt>=2.8.0",
+]
+
+[project.scripts]
+ani-gamer-next = "src.backend.app:main"
+build-dashboard = "scripts.build_dashboard:build_dashboard"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.13.3",
+    "ty>=0.0.1a21",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+

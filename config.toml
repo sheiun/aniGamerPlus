@@ -1,0 +1,85 @@
+bangumi_dir = "/home/sheildon/aniGamerPlus/bangumi"
+temp_dir = "/home/sheildon/aniGamerPlus/temp"
+classify_bangumi = true
+classify_season = false
+check_frequency = 120
+download_cd = 60
+parse_sn_cd = 5
+download_resolution = "1080"
+lock_resolution = false
+only_use_vip = false
+disable_guest_mode = false
+default_download_mode = "latest"
+use_copyfile_method = false
+multi_thread = 1
+multi_upload = 3
+segment_download_mode = true
+multi_downloading_segment = 2
+segment_max_retry = 8
+add_bangumi_name_to_video_filename = true
+add_resolution_to_video_filename = true
+customized_video_filename_prefix = "【動畫瘋】"
+customized_bangumi_name_suffix = ""
+customized_video_filename_suffix = ""
+video_filename_extension = "mp4"
+zerofill = 1
+ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+cookie = "ckWwwRecommendBoardBlackList=[]; ck_forumCDonateShowHint=yes; ANIME_dark_theme=0; nologinuser=02496fe048f2fe745dd982a81e7e533d98c320f3e06a953368e006b84162; buap_modr=p003; buap_puoo=p101; _ga_MT7EZECMKQ=GS2.1.s1759802131$o13$g0$t1759802131$j60$l0$h0; _ga=GA1.1.1761766666.1759512257; __gads=ID=3d61637859d20abc:T=1759512257:RT=1759802133:S=ALNI_MactwvLSx8WGfmeRxkWa1K5io_RRQ; __gpi=UID=0000119eed423743:T=1759512257:RT=1759802133:S=ALNI_MZYJDHsVBNXmZYmIXBaFkM3ouZmgA; __eoi=ID=22f89a3542a92cef:T=1759512257:RT=1759802133:S=AA-Afjbusa3YoNB20FLHgjEZgYNl; cto_bundle=669QQV9aWlMyNyUyQklPYUJ3bUFIUHAwSjkwM2JTTzglMkI5WjRROTBBQ2hhTTdHeXFOdW5WN0wzNXN1VTI4WkNrSzhseXoxamk3SVJHRk50JTJCYnlmNkZMdlBaTkp2YlpGaG8wVUFlbTc2VVlDdmk2SW9YMkQxJTJCWlNpa1BPWCUyRlVtcyUyRmpETlBUbVhHYmxMNGFtR3hWUjBGbmFiYXZDQmdZb0xqanh5a2tYUWtVNjlPWlByUGRacWpyUTJ4NlIlMkI4Q0owZW1URlg0eg; ANIME_NOTICE_PERSONAL_MENU=3; _ga_2Q21791Y9D=GS2.1.s1759512332$o1$g0$t1759512336$j56$l0$h0; ckM=2830312186; BAHAID=kevinsun633; BAHAHASHID=3d4489c089e4000c89833dfca9bb25ead243bee53a4f93847a3bf56e6a7dd956; BAHANICK=%E5%B0%8F%E6%A8%82o; BAHAENUR=89372a6a2fd6cdeb28c00bfd7e61cfa0; BAHARUNE=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJ1c2VyaWQiOiJrZXZpbnN1bjYzMyIsInVzZXJuYW1lIjoiXHU1YzBmXHU2YTAybyIsIm1vYmlsZVZlcmlmeSI6dHJ1ZSwiZGVueVBvc3QiOmZhbHNlLCJhdmF0YXJMZXZlbCI6MTIsIm1pZCI6MjgzMDMxMjE4Niwibm9uY2UiOjIxMjQ1MTM5MDQsImppZCI6Imtldmluc3VuNjMzQGxpdGUuZ2FtZXIuY29tLnR3IiwiZXhwIjoxNzYxMDgwNDAwfQ.-VFSr2C8CTWEn25xkOfuFrHzX7C1vHYthaxqXT0x5KdoeDeS0ssEok0TZOAU7lHBI0rLLQeSjG40a0t8kw88NQ; BAHALV=12; BAHAFLT=1251957158; MB_BAHAID=kevinsun633; MB_BAHANICK=%E5%B0%8F%E6%A8%82o; MB_BAHARUNE=eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJ1c2VyaWQiOiJrZXZpbnN1bjYzMyIsInVzZXJuYW1lIjoiXHU1YzBmXHU2YTAybyIsIm1vYmlsZVZlcmlmeSI6dHJ1ZSwiZGVueVBvc3QiOmZhbHNlLCJhdmF0YXJMZXZlbCI6MTIsIm1pZCI6MjgzMDMxMjE4Niwibm9uY2UiOjIxMjQ1MTM5MDQsImppZCI6Imtldmluc3VuNjMzQGxpdGUuZ2FtZXIuY29tLnR3IiwiZXhwIjoxNzYxMDgwNDAwfQ.-VFSr2C8CTWEn25xkOfuFrHzX7C1vHYthaxqXT0x5KdoeDeS0ssEok0TZOAU7lHBI0rLLQeSjG40a0t8kw88NQ; avtrv=1759802132950; age_limit_content=1; ga_class1=F; ckBahamutCsrfToken=5ec41899a3486918; ckBahaAd=-------0Q----------------; ANIME_SIGN=017b79509bc09d1a8a294e83c5ef2c1e0b2f78995996c5c368e47315; FCNEC=%5B%5B%22AKsRol9FDG7kp7JueQPno-4KzWyFor7R8AseVgZmRZ21oIZg8affwGO_zl_OJtOyeRQH6Jg3yYU0Hq22-WgP4rgsdV5wbN_eKhqnH7ZnA84ZcScIW4xaM5ELqMgoTxghFtZxWvMPmrj3ynzCgp7aWBj9CCB6pUbRXQ%3D%3D%22%5D%5D"
+use_proxy = false
+proxy = "://:"
+no_proxy_akamai = false
+upload_to_server = false
+user_command = "shutdown -s -t 60"
+coolq_notify = false
+telebot_notify = false
+telebot_token = ""
+telebot_use_chat_id = false
+telebot_chat_id = ""
+discord_notify = false
+discord_token = ""
+plex_refresh = false
+plex_url = ""
+plex_token = ""
+plex_section = ""
+plex_naming = false
+faststart_movflags = false
+audio_language = false
+use_mobile_api = false
+danmu = false
+danmu_ban_words = []
+check_latest_version = false
+read_sn_list_when_checking_update = true
+read_config_when_checking_update = true
+ads_time = 29
+mobile_ads_time = 25
+max_completed_tasks = 0
+use_dashboard = true
+save_logs = true
+quantity_of_logs = 7
+sn_list = "45276"
+
+[ftp]
+server = ""
+port = ""
+user = ""
+pwd = ""
+tls = true
+cwd = ""
+show_error_detail = false
+max_retry_num = 15
+
+[coolq_settings]
+msg_argument_name = "message"
+message_suffix = "追加的資訊"
+query = [
+    "http://127.0.0.1:5700/send_group_msg?access_token=abc&group_id=12345678",
+    "http://127.0.0.1:5700/send_group_msg?access_token=abc&group_id=87654321",
+]
+
+[dashboard]
+host = "127.0.0.1"
+port = 5000
+SSL = false
+username = "admin"
+password = "admin"
+secret_key = "st24DmjuzVKc1pAibcgH21xGcPRqdYAfTQUpxH_J1aM"

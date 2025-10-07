@@ -77,6 +77,10 @@ target/
 # pyenv
 .python-version
 
+# uv
+.venv/
+uv.lock
+
 # celery beat schedule file
 celerybeat-schedule
 
@@ -127,3 +131,4 @@ temp/
 cookie2.txt
 */*.iml
 **/.DS_Store
+node_modules/

@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon" />
+	<title>Ani Gamer Next 控制臺</title>
+
+	<!-- Prevent FOUC -->
+	<style>
+		body { visibility: hidden; }
+		body.loaded { visibility: visible; }
+	</style>
+
+	<!-- Vite Asset Loader -->
+	<script type="module">
+		// 檢測是否為開發模式（Vite dev server 運行時）
+		async function checkDevMode() {
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), 200); // 200ms 超時
+
+			try {
+				await fetch('http://localhost:5173/@vite/client', {
+					mode: 'no-cors',
+					signal: controller.signal
+				});
+				clearTimeout(timeout);
+				return true;
+			} catch {
+				clearTimeout(timeout);
+				return false;
+			}
+		}
+
+		async function loadAssets() {
+			const isDev = await checkDevMode();
+
+			if (isDev) {
+				// 開發模式：載入 Vite client 和源文件
+				const viteClient = document.createElement('script');
+				viteClient.type = 'module';
+				viteClient.src = 'http://localhost:5173/@vite/client';
+				document.head.appendChild(viteClient);
+
+				const script = document.createElement('script');
+				script.type = 'module';
+				script.src = 'http://localhost:5173/src/app.js';
+				script.onload = () => document.body.classList.add('loaded');
+				document.head.appendChild(script);
+			} else {
+				// 生產模式：從 manifest 載入
+				try {
+					const response = await fetch('/static/.vite/manifest.json');
+					const manifest = await response.json();
+					const entry = manifest['src/app.js'];
+					if (!entry) {
+						console.error('Entry not found in manifest:', Object.keys(manifest));
+						return;
+					}
+
+					// 注入 CSS
+					let cssLoadCount = 0;
+					const allCssUrls = [];
+
+					if (entry.css) {
+						allCssUrls.push(...entry.css);
+					}
+
+					// 處理 imports 的 CSS
+					if (entry.imports) {
+						entry.imports.forEach(key => {
+							const imp = manifest[key];
+							if (imp && imp.css) {
+								allCssUrls.push(...imp.css);
+							}
+						});
+					}
+
+					// 載入所有 CSS
+					if (allCssUrls.length > 0) {
+						allCssUrls.forEach(css => {
+							const link = document.createElement('link');
+							link.rel = 'stylesheet';
+							link.href = `/static/${css}`;
+							link.onload = () => {
+								cssLoadCount++;
+								if (cssLoadCount === allCssUrls.length) {
+									// 延遲一點以確保樣式完全應用
+									setTimeout(() => document.body.classList.add('loaded'), 50);
+								}
+							};
+							document.head.appendChild(link);
+						});
+					} else {
+						document.body.classList.add('loaded');
+					}
+
+					// 注入主腳本
+					const script = document.createElement('script');
+					script.type = 'module';
+					script.src = `/static/${entry.file}`;
+					document.head.appendChild(script);
+
+					// 注入 legacy polyfills
+					const polyfills = manifest['vite/legacy-polyfills-legacy'];
+					if (polyfills) {
+						const legacyScript = document.createElement('script');
+						legacyScript.noModule = true;
+						legacyScript.src = `/static/${polyfills.file}`;
+						document.head.appendChild(legacyScript);
+					}
+
+					// 注入 legacy 主腳本
+					const legacyEntry = manifest['src/app-legacy.js'];
+					if (legacyEntry) {
+						const legacyScript = document.createElement('script');
+						legacyScript.noModule = true;
+						legacyScript.src = `/static/${legacyEntry.file}`;
+						document.head.appendChild(legacyScript);
+					}
+				} catch (err) {
+					console.error('Failed to load manifest:', err);
+				}
+			}
+		}
+
+		loadAssets();
+	</script>
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+
+	<!-- 登入視圖 -->
+	<div id="loginView" class="min-h-screen bg-gradient-to-br from-primary via-purple-500 to-primary-dark dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-5 transition-colors duration-200">
+		<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-10 animate-fadeIn">
+			<!-- Logo and Header -->
+			<div class="text-center mb-10">
+				<div class="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center shadow-lg shadow-primary/40">
+					<i class="fas fa-film text-white text-4xl"></i>
+				</div>
+				<h1 class="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Ani Gamer Next</h1>
+				<p class="text-gray-600 dark:text-gray-400 text-sm">動畫瘋自動下載控制臺</p>
+			</div>
+
+			<form id="loginForm">
+				<!-- Username Input -->
+				<div class="mb-5 relative">
+					<i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-lg"></i>
+					<input
+						type="text"
+						class="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+						id="username"
+						placeholder="請輸入用戶名"
+						required
+						autocomplete="username"
+					/>
+				</div>
+
+				<!-- Password Input -->
+				<div class="mb-5 relative">
+					<i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-lg"></i>
+					<input
+						type="password"
+						class="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-base transition-all duration-300 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+						id="password"
+						placeholder="請輸入密碼"
+						required
+						autocomplete="current-password"
+					/>
+				</div>
+
+				<!-- Submit Button -->
+				<button
+					type="submit"
+					class="w-full py-3.5 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/40 disabled:opacity-60 disabled:cursor-not-allowed mt-2.5"
+					id="loginBtn"
+				>
+					<span class="btn-text">登入</span>
+				</button>
+			</form>
+
+			<!-- Error Message -->
+			<div class="hidden mt-5 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm animate-shake" id="errorMsg">
+				<strong class="font-semibold">登入失敗：</strong> <span id="errorText">用戶名或密碼錯誤</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- 主應用視圖 -->
+	<div id="appView" class="hidden">
+		<!-- 導航欄 -->
+		<nav class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm z-50 transition-colors duration-200">
+			<div class="container mx-auto px-4">
+				<div class="flex items-center justify-between h-16">
+					<div class="flex items-center space-x-3">
+						<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
+							<i class="fas fa-play-circle text-white text-xl"></i>
+						</div>
+						<span class="text-gray-900 dark:text-white text-xl font-semibold">Ani Gamer Next 控制臺</span>
+					</div>
+					<div class="flex items-center gap-3">
+						<button
+							id="darkModeToggle"
+							class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
+							title="切換深色模式"
+						>
+							<i class="fas fa-moon text-xl dark:hidden"></i>
+							<i class="fas fa-sun text-xl hidden dark:inline"></i>
+						</button>
+						<button
+							id="logoutBtn"
+							class="px-4 py-2 text-primary dark:text-primary-300 hover:bg-primary/10 dark:hover:bg-primary/20 rounded-lg transition-all duration-200 font-medium"
+						>
+							<i class="fas fa-sign-out-alt mr-2"></i>登出
+						</button>
+					</div>
+				</div>
+			</div>
+		</nav>
+
+		<!-- 主容器 -->
+		<div class="container mx-auto px-4 pt-20 pb-8">
+			<!-- Tab 導航 -->
+			<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm pixel-card overflow-hidden transition-colors duration-200">
+				<div class="flex border-b border-gray-200 dark:border-gray-700" role="tablist" id="mainTabs">
+					<a href="#settings" role="tab" aria-selected="true" class="tab-button flex-1 text-center">
+						<i class="fas fa-cog mr-2"></i>模式設定
+					</a>
+					<a href="#monitor" role="tab" aria-selected="false" class="tab-button flex-1 text-center">
+						<i class="fas fa-tasks mr-2"></i>任務監控
+					</a>
+					<a href="#snlist" role="tab" aria-selected="false" class="tab-button flex-1 text-center">
+						<i class="fas fa-list mr-2"></i>訂閱清單
+					</a>
+					<a href="#manual" role="tab" aria-selected="false" class="tab-button flex-1 text-center">
+						<i class="fas fa-plus-circle mr-2"></i>新增下載
+					</a>
+				</div>
+
+				<!-- Tab 內容 -->
+				<div class="p-6 md:p-8 min-h-[600px]">
+					<!-- 設定頁面 -->
+					<div id="settings" role="tabpanel" class="block animate-fadeIn">
+						<div class="max-w-7xl mx-auto">
+							<form>
+								<!-- 路徑設定 -->
+								<div class="mb-8">
+									<h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-600">
+										路徑設定
+									</h2>
+									<div class="space-y-4">
+										<div class="flex flex-col sm:flex-row sm:items-center gap-3">
+											<label class="w-32 text-gray-700 dark:text-gray-300 font-medium">下載目錄</label>
+											<input
+												id="bangumi_dir"
+												type="text"
+												class="flex-1 px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-700 dark:text-gray-100"
+												placeholder="放空則存放於程式所在資料夾"
+											/>
+										</div>
+										<div class="flex flex-col sm:flex-row sm:items-center gap-3">
+											<label class="w-32 text-gray-700 dark:text-gray-300 font-medium">暫存目錄</label>
+											<input
+												id="temp_dir"
+												type="text"
+												class="flex-1 px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-700 dark:text-gray-100"
+												placeholder="放空則存放於程式所在資料夾"
+											/>
+										</div>
+									</div>
+								</div>
+
+								<!-- 下載設定 -->
+								<div class="mb-8">
+									<h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-600">
+										下載設定
+									</h2>
+									<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+										<!-- 開關設定 -->
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">建立番劇資料夾</span>
+											<input type="checkbox" id="classify_bangumi" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">鎖定解析度</span>
+											<input type="checkbox" id="lock_resolution" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">分段下載模式</span>
+											<input type="checkbox" id="segment_download_mode" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">檔名添加番劇名</span>
+											<input type="checkbox" id="add_bangumi_name_to_video_filename" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">檔名添加解析度</span>
+											<input type="checkbox" id="add_resolution_to_video_filename" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">模擬手機端解析</span>
+											<input type="checkbox" id="use_mobile_api" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">下載彈幕</span>
+											<input type="checkbox" id="danmu" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">不使用遊客帳號</span>
+											<input type="checkbox" id="disable_guest_mode" data-switch />
+										</div>
+
+										<!-- 下拉選單設定 -->
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">下載解析度</label>
+											<select id="download_resolution" class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-gray-800 dark:text-gray-100">
+												<option>1080P</option>
+												<option>720P</option>
+												<option>540P</option>
+												<option>480P</option>
+												<option>360P</option>
+											</select>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">默認下載模式</label>
+											<select id="default_download_mode" class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-gray-800 dark:text-gray-100">
+												<option value="latest">最後一集</option>
+												<option value="all">全部劇集</option>
+												<option value="largest-sn">最近上傳</option>
+											</select>
+										</div>
+
+										<!-- 數字輸入設定 -->
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">更新間隔（分鐘）</label>
+											<input
+												id="check_frequency"
+												type="number"
+												min="1"
+												step="1"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="單位分鐘"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">最大併發下載數</label>
+											<input
+												id="multi_thread"
+												type="number"
+												min="1"
+												step="1"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="正整數"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">最大併發分段數</label>
+											<input
+												id="multi_downloading_segment"
+												type="number"
+												min="1"
+												step="1"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="正整數"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">影片檔名前綴</label>
+											<input
+												id="customized_video_filename_prefix"
+												type="text"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">影片檔名後綴</label>
+											<input
+												id="customized_video_filename_suffix"
+												type="text"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">下載冷卻時間（秒）</label>
+											<input
+												id="download_cd"
+												type="number"
+												min="0"
+												step="1"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="正整數"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">SN解析冷卻時間（秒）</label>
+											<input
+												id="parse_sn_cd"
+												type="number"
+												min="0"
+												step="1"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="正整數"
+											/>
+										</div>
+									</div>
+
+									<!-- UA 設定 -->
+									<div class="mt-4 flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+										<label class="text-gray-700 dark:text-gray-300 font-medium">請求 User Agent</label>
+										<div class="flex gap-2">
+											<input
+												id="ua"
+												type="text"
+												class="flex-1 px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="若有使用 cookie 請與取得 cookie 的瀏覽器保持一致"
+											/>
+											<button
+												type="button"
+												onclick="getUA()"
+												class="px-6 py-2.5 bg-gray-700 hover:bg-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 text-white font-medium rounded-lg transition-colors"
+											>
+												取得當前 UA
+											</button>
+										</div>
+									</div>
+
+									<!-- Cookie 設定 -->
+									<div class="mt-4 flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+										<label class="text-gray-700 dark:text-gray-300 font-medium">Cookie</label>
+										<textarea
+											id="cookie"
+											rows="3"
+											class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-y dark:bg-gray-800 dark:text-gray-100"
+											placeholder="請輸入巴哈姆特 Cookie（可留空）"
+										></textarea>
+									</div>
+								</div>
+
+								<!-- 代理設定 -->
+								<div class="mb-8">
+									<h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-600">
+										代理設定
+									</h2>
+									<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">代理總開關</span>
+											<input type="checkbox" id="use_proxy" data-switch />
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">選擇協議</label>
+											<select id="proxy_protocol" class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all bg-white dark:bg-gray-800 dark:text-gray-100">
+												<option>SOCKS5</option>
+												<option>SOCKS5H</option>
+												<option>HTTP</option>
+												<option>HTTPS</option>
+											</select>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">伺服器 IP</label>
+											<input
+												id="proxy_ip"
+												type="text"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="127.0.0.1"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">Port</label>
+											<input
+												id="proxy_port"
+												type="text"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="1080"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">用戶名</label>
+											<input
+												id="proxy_user"
+												type="text"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="沒有放空即可"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">密碼</label>
+											<input
+												id="proxy_passwd"
+												type="password"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="沒有放空即可"
+												autocomplete="off"
+											/>
+										</div>
+									</div>
+								</div>
+
+								<!-- 其他設定 -->
+								<div class="mb-8">
+									<h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-600">
+										其他
+									</h2>
+									<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">啟動時檢查更新</span>
+											<input type="checkbox" id="check_latest_version" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">每次檢查讀取 sn_list</span>
+											<input type="checkbox" id="read_sn_list_when_checking_update" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">每次檢查讀取配置</span>
+											<input type="checkbox" id="read_config_when_checking_update" data-switch />
+										</div>
+
+										<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+											<span class="text-gray-700 dark:text-gray-300 font-medium">記錄日志</span>
+											<input type="checkbox" id="save_logs" data-switch />
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">日志數量</label>
+											<input
+												id="quantity_of_logs"
+												type="number"
+												min="1"
+												step="1"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="正整數，每天一個日志"
+											/>
+										</div>
+
+										<div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+											<label class="text-gray-700 dark:text-gray-300 font-medium">已完成任務保留數量</label>
+											<input
+												id="max_completed_tasks"
+												type="number"
+												min="0"
+												step="1"
+												class="px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all dark:bg-gray-800 dark:text-gray-100"
+												placeholder="0 表示不限制，預設 100"
+											/>
+										</div>
+									</div>
+								</div>
+
+								<!-- 按鈕 -->
+								<div class="flex justify-center gap-4 pt-6 border-t-2 border-gray-200 dark:border-gray-600">
+									<button
+										type="button"
+										onclick="readSettings()"
+										class="px-8 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-lg hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 transition-all"
+									>
+										保存
+									</button>
+									<button
+										type="button"
+										onclick="reloadSetting()"
+										class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg hover:-translate-y-0.5 hover:shadow-lg transition-all"
+									>
+										重載
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<!-- 監控頁面 -->
+					<div id="monitor" role="tabpanel" class="hidden">
+						<div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-6">
+							<!-- 統計資訊卡片 -->
+							<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="task_stats">
+								<div class="pixel-card bg-gradient-to-br from-green-500 to-green-600 p-6 text-white">
+									<div class="flex items-center justify-between">
+										<div>
+											<p class="text-green-100 text-sm font-medium mb-1">執行中</p>
+											<p class="text-3xl font-bold" id="active_count">0</p>
+										</div>
+										<div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+											<i class="fas fa-spinner fa-pulse text-2xl"></i>
+										</div>
+									</div>
+								</div>
+
+								<div class="pixel-card bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 text-white">
+									<div class="flex items-center justify-between">
+										<div>
+											<p class="text-yellow-100 text-sm font-medium mb-1">等待中</p>
+											<p class="text-3xl font-bold" id="pending_count">0</p>
+										</div>
+										<div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+											<i class="fas fa-clock text-2xl"></i>
+										</div>
+									</div>
+								</div>
+
+								<div class="pixel-card bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white">
+									<div class="flex items-center justify-between">
+										<div>
+											<p class="text-blue-100 text-sm font-medium mb-1">已完成</p>
+											<p class="text-3xl font-bold" id="completed_count">0</p>
+										</div>
+										<div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+											<i class="fas fa-check-circle text-2xl"></i>
+										</div>
+									</div>
+								</div>
+
+								<div class="pixel-card bg-gradient-to-br from-purple-500 to-purple-600 p-6 text-white">
+									<div class="flex items-center justify-between">
+										<div>
+											<p class="text-purple-100 text-sm font-medium mb-1">總計</p>
+											<p class="text-3xl font-bold" id="total_count">0</p>
+										</div>
+										<div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+											<i class="fas fa-tasks text-2xl"></i>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- 無任務提示 -->
+							<div class="pixel-card bg-white dark:bg-gray-700 p-6 text-center hidden" id="no_task">
+								<i class="fas fa-inbox text-gray-300 dark:text-gray-600 text-6xl mb-4"></i>
+								<h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">當前無任務</h3>
+								<p class="text-gray-500 dark:text-gray-400">當前任務列隊為空</p>
+							</div>
+
+							<!-- 任務列表 -->
+							<div class="space-y-4" id="task_info_panel"></div>
+						</div>
+					</div>
+
+					<!-- 訂閱清單頁面 -->
+					<div id="snlist" role="tabpanel" class="hidden">
+						<div class="max-w-5xl mx-auto">
+							<div class="pixel-card bg-white dark:bg-gray-800 p-6 mb-6">
+								<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
+									<i class="fas fa-info-circle text-primary mr-2"></i>格式說明
+								</h3>
+								<div class="space-y-3 text-gray-700 dark:text-gray-300">
+									<div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+										<p class="font-medium mb-2">格式：</p>
+										<code class="block bg-gray-100 dark:bg-gray-600 p-3 rounded border border-gray-200 dark:border-gray-600 text-sm">
+											@分類(可空)<br>
+											sn碼 下載模式(可空) &lt;重命名&gt;(可空) #注釋(可空)
+										</code>
+									</div>
+									<div class="space-y-2">
+										<p><kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-sm">#</kbd> 後面的所有字符程序均不會讀取，可以用於標記番劇名</p>
+										<p><kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-sm">@</kbd> 開頭後面的字符將會作爲番劇的分類名，番劇會歸類在此分類名的資料夾下</p>
+										<p>若單獨 <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-sm">@</kbd> 表示不分類</p>
+										<p>用 <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-sm">&lt;</kbd> 與 <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-sm">&gt;</kbd> 將自定義的番劇名框起來，下載時將會使用這個名字作爲番劇目錄名</p>
+									</div>
+								</div>
+							</div>
+
+							<div class="pixel-card bg-white dark:bg-gray-800 p-6">
+								<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
+									<i class="fas fa-edit text-primary mr-2"></i>訂閱清單
+								</h3>
+								<form>
+									<textarea
+										class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-mono text-sm resize-y"
+										rows="18"
+										id="sn_list_textarea"
+									></textarea>
+									<div class="flex justify-center mt-6">
+										<button
+											type="button"
+											class="px-8 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/30 transition-all pixel-button"
+											onclick="saveSnList()"
+										>
+											<i class="fas fa-save mr-2"></i>保存
+										</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+
+					<!-- 新增下載頁面 -->
+					<div id="manual" role="tabpanel" class="hidden">
+						<form class="max-w-3xl mx-auto space-y-6">
+							<div class="pixel-card bg-white dark:bg-gray-800 p-6">
+								<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">影片資訊</h3>
+								<div>
+									<label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">影片鏈接</label>
+									<input
+										id="manual_link"
+										type="text"
+										class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+										placeholder="https://ani.gamer.com.tw/animeVideo.php?sn=..."
+									/>
+								</div>
+							</div>
+
+							<div class="pixel-card bg-white dark:bg-gray-800 p-6">
+								<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">下載選項</h3>
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+									<div>
+										<label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">下載模式</label>
+										<select id="manual_mode" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all bg-white">
+											<option value="single">本集</option>
+											<option value="latest">最後一集</option>
+											<option value="all">全部劇集</option>
+											<option value="largest-sn">最大SN碼</option>
+										</select>
+									</div>
+
+									<div>
+										<label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">解析度</label>
+										<select id="manual_resolution" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all bg-white">
+											<option value="auto">選擇最優</option>
+											<option value="1080P">1080P (高清)</option>
+											<option value="720P">720P (高清)</option>
+											<option value="480P">480P (標清)</option>
+											<option value="360P">360P (流暢)</option>
+										</select>
+									</div>
+
+									<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+										<span class="text-gray-700 dark:text-gray-300 font-medium">建立番劇資料夾</span>
+										<input type="checkbox" id="manual_classify" checked data-switch />
+									</div>
+
+									<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+										<span class="text-gray-700 dark:text-gray-300 font-medium">下載彈幕</span>
+										<input type="checkbox" id="manual_danmu" data-switch />
+									</div>
+
+									<div class="md:col-span-2">
+										<label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">最大併發數</label>
+										<input
+											id="manual_thread_limit"
+											type="number"
+											min="1"
+											step="1"
+											value="1"
+											class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+										/>
+									</div>
+								</div>
+							</div>
+
+							<div class="flex justify-center pt-4">
+								<button
+									type="button"
+									onclick="readManualConfig()"
+									class="px-10 py-3.5 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/30 transition-all pixel-button"
+								>
+									<i class="fas fa-download mr-2"></i>開始下載
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

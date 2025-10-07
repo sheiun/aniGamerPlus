@@ -1,0 +1,137 @@
+# aniGamerPlus 配置文件 (TOML 格式)
+# 這是一個示例配置文件，請根據您的需求進行修改
+
+# ===== 目錄配置 =====
+bangumi_dir = ""  # 番劇保存目錄，留空則使用默認 bangumi 目錄
+temp_dir = ""     # 臨時文件目錄，留空則使用默認 temp 目錄
+classify_bangumi = true   # 是否為每個番劇創建獨立文件夾
+classify_season = false   # 是否為季度創建子目錄
+
+# ===== 下載配置 =====
+check_frequency = 5       # 檢查更新頻率（分鐘）
+download_cd = 60          # 下載冷卻時間（秒）
+parse_sn_cd = 5           # SN 解析冷卻時間（秒）
+download_resolution = "1080"  # 下載分辨率 (360/480/540/576/720/1080)
+lock_resolution = false   # 是否鎖定分辨率（如果不存在則下載失敗）
+only_use_vip = false      # 是否僅使用 VIP 帳號下載
+disable_guest_mode = false  # 不使用遊客帳號（當 cookie 更新失敗時暫停下載，避免下載 360P 影片）
+default_download_mode = "latest"  # 默認下載模式 (latest/all/largest-sn)
+use_copyfile_method = false  # 使用複製而非移動文件（適用於 rclone 掛載盤）
+
+# ===== 多線程配置 =====
+multi_thread = 1              # 最大並發下載數
+multi_upload = 3              # 最大並發上傳數
+segment_download_mode = true  # 是否使用分段下載模式
+multi_downloading_segment = 2 # 每個影片並發下載分段數
+segment_max_retry = 8         # 分段最大重試次數（-1 為無限重試）
+
+# ===== 文件名配置 =====
+add_bangumi_name_to_video_filename = true  # 是否在文件名中添加番劇名
+add_resolution_to_video_filename = true    # 是否在文件名中添加分辨率
+customized_video_filename_prefix = "【動畫瘋】"  # 自定義文件名前綴
+customized_bangumi_name_suffix = ""       # 自定義番劇名後綴
+customized_video_filename_suffix = ""     # 自定義文件名後綴
+video_filename_extension = "mp4"          # 影片文件擴展名
+zerofill = 1                              # 集數補零位數（1 為不補零）
+
+# ===== 網絡配置 =====
+ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+use_proxy = false
+proxy = "http://user:passwd@example.com:1000"
+no_proxy_akamai = false  # 不代理 Akamai CDN
+
+# ===== 上傳配置 =====
+upload_to_server = false
+
+[ftp]
+server = ""
+port = 0
+user = ""
+pwd = ""
+tls = true
+cwd = ""
+show_error_detail = false
+max_retry_num = 15
+
+# ===== 用戶命令 =====
+user_command = "shutdown -s -t 60"  # 所有任務完成後執行的命令
+
+# ===== 通知配置 =====
+coolq_notify = false
+
+[coolq_settings]
+msg_argument_name = "message"
+message_suffix = "追加的資訊"
+query = [
+    "http://127.0.0.1:5700/send_group_msg?access_token=abc&group_id=12345678",
+    "http://127.0.0.1:5700/send_group_msg?access_token=abc&group_id=87654321"
+]
+
+# Telegram 通知
+telebot_notify = false
+telebot_token = ""
+telebot_use_chat_id = false
+telebot_chat_id = ""
+
+# Discord 通知
+discord_notify = false
+discord_token = ""
+
+# ===== Plex 配置 =====
+plex_refresh = false
+plex_url = ""
+plex_token = ""
+plex_section = ""
+plex_naming = false  # 適配 Plex 命名規則
+
+# ===== 其他配置 =====
+faststart_movflags = false  # 將 metadata 移至影片文件頭部
+audio_language = false      # 添加日語音軌標籤
+use_mobile_api = false      # 使用 APP API
+
+# ===== 彈幕配置 =====
+danmu = false
+danmu_ban_words = []  # 彈幕過濾詞列表
+
+# ===== 系統配置 =====
+check_latest_version = true                    # 是否檢查最新版本
+read_sn_list_when_checking_update = true       # 每次檢查更新時讀取 sn_list
+read_config_when_checking_update = true        # 每次檢查更新時重新讀取配置
+ads_time = 25                                  # 廣告等待時間（秒）
+mobile_ads_time = 25                           # 移動 API 廣告等待時間（秒）
+
+# ===== Web 控制面板 =====
+use_dashboard = true
+max_completed_tasks = 100  # 最多保留的已完成任務數量（0 表示不限制，預設 100）
+
+[dashboard]
+host = "127.0.0.1"
+port = 5000
+SSL = false
+username = "admin"
+password = "admin"
+secret_key = ""  # JWT 密鑰（留空則自動生成）用於持久化登入 token，修改後所有現有 token 失效
+
+# ===== 日誌配置 =====
+save_logs = true
+quantity_of_logs = 7  # 保留的日誌數量
+
+# ===== SN 列表配置 =====
+# 支持以下格式：
+# 1. 單個 SN：12345
+# 2. 指定下載模式：12345 latest|all|largest-sn
+# 3. 自定義番劇名：12345 <自定義名稱>
+# 4. 番劇分類標籤：@標籤名稱（在 SN 前添加）
+# 5. 注釋：# 注釋內容
+# 範例：
+# @本季新番
+# 12345 latest <我的番劇>
+# 12346 all
+# @舊番
+# 12347
+sn_list = ""
+
+# ===== 版本號（請勿手動修改） =====
+config_version = 17.2
+database_version = 2.0
+
